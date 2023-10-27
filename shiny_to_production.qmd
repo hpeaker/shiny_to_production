@@ -475,6 +475,6 @@ as it is running but there will be log files
 - harry.peaker@smartdatafoundry.com
 - <https://www.linkedin.com/in/harry-peaker-56442278/>
 - <https://github.com/hpeaker/shiny_to_production>
-- Slides published on [Quarto Pub](https://quartopub.com/sites/8c853174-64c9-4968-b38d-8667adceff9b)
+- Slides published on [Quarto Pub](https://hpeaker.quarto.pub/shiny---prototype-to-production/#/title-slide)
 
 
