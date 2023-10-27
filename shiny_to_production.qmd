@@ -1,0 +1,192 @@
+---
+title: "Shiny - Prototype to Production"
+format:
+  revealjs:
+    slide-number: true
+    chalkboard: 
+      buttons: false
+    preview-links: auto
+    logo: logo.png
+    footer: <https://smartdatafoundry.com>
+---
+
+## Introduction
+
+## What is Shiny?
+
+-   Shiny is an open source R package that provides an elegant and powerful web framework for building web applications using R. Shiny helps you turn your analyses into interactive web applications without requiring HTML, CSS, or JavaScript knowledge.
+
+-   Learn Shiny at <https://shiny.posit.co>
+
+-   [Shiny Gallery](https://shiny.posit.co/r/gallery/)
+
+## Motivation
+
+::: incremental
+-   R and Shiny make it very easy to quickly prototype data driven web applications.
+-   It's easy for a prototype to quietly move into "production".
+-   Maintaining software is difficult!
+-   Maintaining software requires skills and knowledge outside R and Shiny.
+-  [Shiny in Production](https://shiny-in-production.jumpingrivers.com)
+:::
+
+## What is "production"?
+
+::: incremental
+-   It is **used**, even if only by one person.
+-   It is **relied upon** by its user(s).
+-   It has **real life impact** if something goes wrong.
+:::
+
+## Deploying Shiny Apps
+
+::: columns
+::: {.column width="40%"}
+
+::: incremental
+-   [Shinyapps.io](https://www.shinyapps.io)
+-   [Posit Connect](https://posit.co/products/enterprise/connect/)
+-   [ShinyProxy](https://www.shinyproxy.io)
+-   [Shiny Server](https://posit.co/products/open-source/shinyserver/)
+:::
+
+:::
+
+::: {.column width="60%"}
+![](r_server.png)
+:::
+:::
+
+## Good Coding Practices
+
+::: {.fragment .fade-in-then-semi-out}
+-   Testing
+
+-   Comments and Documentation
+
+-   Write functions
+
+-   Clearly state dependencies
+:::
+
+
+::: {.fragment .fade-in}
+-   Everything could (should?) be an **R package**
+    + {testthat}, {roxygen}, {usethis}, {devtools}
+    + Explicit [Imports, Depends](https://r-pkgs.org/description.html) and
+    [NAMESPACE](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-namespace)(ing)
+:::
+
+::: {.fragment .fade-in}
+-   **Shiny Modules**
+:::
+
+## Shiny Modules
+
+- Abstract beyond functions including both UI and server logic
+- Address the namespacing issue in shiny apps
+- Break the codebase into more manageable chunks
+- Reuse modules multiple times within the same app
+- Or reuse generic modules in multiple applications
+
+It's never too early to start modularising your shiny app code but regular
+functions should still be used where appropriate.
+
+## Shiny Modules
+
+
+## Version Control
+
+- GitHub or similar
+- Never too early to start using version control
+- Can go a long way with just the basic features; checkout, pull, add, commit, push
+- A simple workflow such as protecting `main` and working on feature branches 
+can make feature development much easier and open up CI/CD possibilities.
+
+## Local Development vs. Production
+
+- Will an app that runs locally also run on the production server?
+- If not, how do we debug?
+- Does the server have access to the same data?
+    + R packages?
+    + System dependencies?
+- Is the environment the app runs in reproducible
+
+## Data
+
+The server where the app is running needs to be able to access the data the app
+needs to run. Ideally the local development environment should be able to access
+the same or similar data.
+
+- Files bundled with the app
+- Part of a package
+- Stored in a database
+- Stored in some cloud service
+- Accessed via an API
+
+## Data
+
+
+- What to do in cases where data cannot be retrieved?
+
+## Environment Management
+
+
+![](renv.png){width=10%} [{renv}](https://rstudio.github.io/renv/)  allows for the creation of a project-based library 
+instead of a global one. This environment can then be restored elsewhere e.g.
+another dev machine or in production.
+
+
+
+![](docker.png){width=10%} [Docker](https://www.docker.com) encloses an entire software environment inside
+an image that can then later be launched. A shiny app inside a Docker container
+can then be deployed on any server that can run Docker.
+
+## Docker
+
+::: columns
+::: {.column width="50%"}
+The general idea with Docker is to write a Dockerfile with all the "rules" used
+to create an environment. Then if the Dockerfile can compile and run on your machine
+it should work everywhere.
+
+See [rocker](https://rocker-project.org) for Docker containers for R
+:::
+
+::: {.column width="50%"}
+```{.dockerfile}
+FROM a import a
+```
+:::
+:::
+
+## Logging
+
+::: incremental
+- Typically, the server where an app is deployed won't give interactive feedback
+as it is running but there will be log files
+- Where are these log files?
+- What do they contain?
+- How do we augment them?
+:::
+
+[{logger}](https://daroczig.github.io/logger/)
+
+## Further Reading
+
+- Books
+    + [Engineering Production-Grade Shiny Apps](https://engineering-shiny.org/index.html)
+    + [R Packages](https://r-pkgs.org)
+
+- Frameworks
+    + [{golem}](https://github.com/ThinkR-open/golem)
+    + [{leprechaun}](https://leprechaun.opifex.org/#/)
+    + [{rhino}](https://appsilon.github.io/rhino/articles/explanation/what-is-rhino.html)
+    
+- [Shinylive](https://shiny.posit.co/py/docs/shinylive.html) - Running shiny apps without a server
+- [shinytest](https://rstudio.github.io/shinytest/articles/shinytest.html) - Testing shiny apps
+
+
+## Questions/Contact
+
+
