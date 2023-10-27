@@ -1,5 +1,6 @@
 ---
 title: "Shiny - Prototype to Production"
+author: Harry Peaker, Data Scientist - Smart Data Foundry
 format:
   revealjs:
     slide-number: true
@@ -9,8 +10,6 @@ format:
     logo: logo.png
     footer: <https://smartdatafoundry.com>
 ---
-
-## Introduction
 
 ## What is Shiny?
 
@@ -72,7 +71,8 @@ format:
 
 ::: {.fragment .fade-in}
 -   Everything could (should?) be an **R package**
-    + {testthat}, {roxygen}, {usethis}, {devtools}
+    + [{testthat}](https://testthat.r-lib.org), [{roxygen2}](https://roxygen2.r-lib.org),
+    [{usethis}](https://usethis.r-lib.org), [{devtools}](https://devtools.r-lib.org)
     + Explicit [Imports, Depends](https://r-pkgs.org/description.html) and
     [NAMESPACE](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-namespace)(ing)
 :::
@@ -94,6 +94,178 @@ functions should still be used where appropriate.
 
 ## Shiny Modules
 
+We'll use a version of the [Palmerston Penguins](https://allisonhorst.github.io/palmerpenguins/)
+app featured at <https://shiny.posit.co>
+
+## Shiny Modules
+
+::: panel-tabset
+### ui.R
+```{.r}
+ui <- fluidPage(
+  theme = bs_theme(bootswatch = "minty"),
+  fluidRow(
+    column(3,
+           checkboxGroupInput(
+             "species", "Filter by species",
+             choices = unique(df$Species),
+             selected = unique(df$Species)
+           ),
+           hr(),
+           varSelectInput("xvar", "X variable", df_num, selected = "Bill Length (mm)"),
+           varSelectInput("yvar", "Y variable", df_num, selected = "Bill Depth (mm)"),
+           hr(), # Add a horizontal rule
+           checkboxInput("by_species", "Show species", TRUE),
+           checkboxInput("show_margins", "Show marginal plots", TRUE),
+           checkboxInput("smooth", "Add smoother")
+    ),
+    column(9,
+           plotOutput("scatter")
+    )
+  )
+)
+```
+
+### server.R
+```{.r}
+server <- function(input, output, session) {
+  subsetted <- reactive({
+    req(input$species)
+    df |> filter(Species %in% input$species)
+  })
+
+  output$scatter <- renderPlot({
+    p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar)) + list(
+      theme(legend.position = "bottom"),
+      if (input$by_species) aes(color = Species),
+      geom_point(),
+      if (input$smooth) geom_smooth()
+    )
+
+    if (input$show_margins) {
+      margin_type <- if (input$by_species) "density" else "histogram"
+      p <- ggExtra::ggMarginal(p, type = margin_type, margins = "both",
+                               size = 8, groupColour = input$by_species, groupFill = input$by_species)
+    }
+
+    p
+  }, res = 100)
+}
+```
+
+### global.R
+```{.r}
+library(shiny)
+library(bslib)
+library(dplyr)
+library(ggplot2)
+library(ggExtra)
+
+penguins_csv <- "https://raw.githubusercontent.com/jcheng5/simplepenguins.R/main/penguins.csv"
+
+df <- readr::read_csv(penguins_csv)
+# Find subset of columns that are suitable for scatter plot
+df_num <- df |> select(where(is.numeric), -Year)
+
+```
+
+:::
+
+## Shiny Modules
+
+::: panel-tabset
+
+### penguins.R
+```{.r}
+penguinsUI <- function(id, df_num) {
+  ns <- NS(id)
+
+  fluidRow(
+    column(3,
+           hr(),
+           varSelectInput(ns("xvar"), "X variable", df_num, selected = "Bill Length (mm)"),
+           varSelectInput(ns("yvar"), "Y variable", df_num, selected = "Bill Depth (mm)"),
+           hr(), # Add a horizontal rule
+           checkboxInput(ns("by_species"), "Show species", TRUE),
+           checkboxInput(ns("show_margins"), "Show marginal plots", TRUE),
+           checkboxInput(ns("smooth"), "Add smoother")
+    ),
+    column(9,
+           plotOutput(ns("scatter"))
+    )
+  )
+}
+
+penguinsServer <- function(id, penguins_data) {
+  moduleServer(
+    id,
+    function(input, output, session) {
+      output$scatter <- renderPlot({
+        p <- ggplot(penguins_data(), aes(!!input$xvar, !!input$yvar)) + list(
+          theme(legend.position = "bottom"),
+          if (input$by_species) aes(color = Species),
+          geom_point(),
+          if (input$smooth) geom_smooth()
+        )
+
+        if (input$show_margins) {
+          margin_type <- if (input$by_species) "density" else "histogram"
+          p <- ggExtra::ggMarginal(p, type = margin_type, margins = "both",
+                                   size = 8, groupColour = input$by_species, groupFill = input$by_species)
+        }
+
+        p
+      }, res = 100)
+    }
+  )
+}
+```
+
+
+### ui.R
+```{.r}
+ui <- fluidPage(
+  theme = bs_theme(bootswatch = "minty"),
+  checkboxGroupInput(
+    "species", "Filter by species",
+    choices = unique(df$Species),
+    selected = unique(df$Species)
+  ),
+  penguinsUI("top", df_num),
+  hr(),
+  penguinsUI("bottom", df_num)
+)
+```
+### server.R
+```{.r}
+server <- function(input, output, session) {
+  subsetted <- reactive({
+    req(input$species)
+    df |> filter(Species %in% input$species)
+  })
+
+  penguinsServer("top", subsetted)
+  penguinsServer("bottom", subsetted)
+}
+```
+### global.R
+```{.r}
+library(shiny)
+library(bslib)
+library(dplyr)
+library(ggplot2)
+library(ggExtra)
+
+source("penguins.R")
+
+penguins_csv <- "https://raw.githubusercontent.com/jcheng5/simplepenguins.R/main/penguins.csv"
+
+df <- readr::read_csv(penguins_csv)
+# Find subset of columns that are suitable for scatter plot
+df_num <- df |> select(where(is.numeric), -Year)
+```
+
+:::
 
 ## Version Control
 
@@ -124,10 +296,62 @@ the same or similar data.
 - Stored in some cloud service
 - Accessed via an API
 
-## Data
+## Data {.smaller}
 
+::: columns
+::: {.column width="50%"}
+- [Managing credentials](https://solutions.posit.co/connections/db/best-practices/managing-credentials/)
+    + Integrated security
+    + Manage with a package e.g. {keyring} or {config}
+    + Environment variables using the `.Renviron` file
+    + Prompt for credentials
+    + Don't put them directly in your code!
+:::
 
+::: {.column width="50%"}
+```{.r filename=".Renviron"}
+AWS_ACCESS_KEY_ID="******************"
+AWS_SECRET_ACCESS_KEY="******************"
+AWS_SESSION_TOKEN="******************"
+
+userid = "username"
+password = "password"
+```
+
+Then retrieve with `Sys.getenv`:
+
+```{.r}
+con <- DBI::dbConnect(odbc::odbc(),
+    Driver = "impala", 
+    Host   = "database.posit.co",
+    UID    = Sys.getenv("userid"),
+    PWD    = Sys.getenv("pwd")
+)
+```
+
+:::
+:::
+
+::: columns
+::: {.column width="50%"}
 - What to do in cases where data cannot be retrieved?
+- When errors occur can we fail gracefully?
+:::
+
+::: {.column width="50%"}
+```{.r}
+tryCatch({
+    # expression to evaluate that might fail
+    # e.g. reading data from a Database or API
+  },
+  error = function(e) {
+    # handle the error
+  },
+  finally = # do something on function exit
+)
+```
+:::
+:::
 
 ## Environment Management
 
@@ -142,7 +366,7 @@ another dev machine or in production.
 an image that can then later be launched. A shiny app inside a Docker container
 can then be deployed on any server that can run Docker.
 
-## Docker
+## Docker {.smaller}
 
 ::: columns
 ::: {.column width="50%"}
@@ -154,11 +378,39 @@ See [rocker](https://rocker-project.org) for Docker containers for R
 :::
 
 ::: {.column width="50%"}
-```{.dockerfile}
-FROM a import a
+```{.dockerfile filename="Dockerfile"}
+# Base image - https://rocker-project.org/images/versioned/r-ver.html
+# Extending image advice - https://rocker-project.org/use/extending.html
+FROM rocker/r-ver:4
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxt6 libpq-dev \
+    libcurl4-gnutls-dev \
+    libcairo2-dev \
+    libxt-dev \
+    libssl-dev \
+    libssh2-1-dev \
+    && rm -rf /var/lib/apt/lists/*
+RUN install2.r --skipinstalled --error \
+    shiny bslib dplyr readr ggplot2 ggExtra \
+    && rm -rf /tmp/downloaded_packages \
+    && strip /usr/local/lib/R/site-library/*/libs/*.so
+RUN echo "local(options(shiny.port = 3838, shiny.host = '0.0.0.0'))" >> /usr/local/lib/R/etc/Rprofile.site
+RUN addgroup --system app \
+    && adduser --system --ingroup app app
+WORKDIR /home/app
+COPY *.R .
+RUN chown app:app -R /home/app
+USER app
+EXPOSE 3838
+CMD ["R", "-e", "shiny::runApp('/home/app')"]
 ```
 :::
 :::
+
+```{.bash}
+docker build . -t penguin_modules
+docker run -p 3838:3838 penguin_modules
+```
 
 ## Logging
 
@@ -170,7 +422,38 @@ as it is running but there will be log files
 - How do we augment them?
 :::
 
-[{logger}](https://daroczig.github.io/logger/)
+## Logging
+
+::: columns
+::: {.column width="50%"}
+- Packages 
+    + [{logger}](https://daroczig.github.io/logger/)
+    + [{futile.logger}](https://cran.r-project.org/web/packages/futile.logger/index.html)
+    + [{logging}](https://cran.r-project.org/web/packages/logging/index.html)
+    + [{log4r}](https://cran.r-project.org/web/packages/log4r/index.html)
+    + [{loggit}](https://cran.r-project.org/web/packages/loggit/index.html)
+    + [{lumberjack}](https://cran.r-project.org/web/packages/lumberjack/index.html)
+:::
+
+::: {.column width="50%"}
+- Logging Levels
+    + Debug
+    + Info
+    + Warn
+    + Error
+    + Fatal
+:::
+:::
+
+## Logging
+
+::: incremental
+- Ideally want logs in both human readable format and machine readable format (e.g JSON)
+- Ideally want logging to be done asynchronously
+- Send human readable alerts to team channels (email, MS Teams, Slack)
+- Export and analyse machine readable logs
+- Present the analysis in a Shiny App!
+:::
 
 ## Further Reading
 
@@ -187,6 +470,11 @@ as it is running but there will be log files
 - [shinytest](https://rstudio.github.io/shinytest/articles/shinytest.html) - Testing shiny apps
 
 
-## Questions/Contact
+## Questions?
+
+- harry.peaker@smartdatafoundry.com
+- <https://www.linkedin.com/in/harry-peaker-56442278/>
+- <https://github.com/hpeaker/shiny_to_production>
+- Slides published on [Quarto Pub](https://quartopub.com/sites/8c853174-64c9-4968-b38d-8667adceff9b)
 
 
